@@ -13,6 +13,10 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from 'express';
 import { SigningService } from './signing.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../../common/decorators/current-user.decorator';
 import { SignContractDto } from './dto/sign-contract.dto';
 import { RejectContractDto } from './dto/reject-contract.dto';
 
@@ -38,16 +42,22 @@ export class SigningController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '获取合同签署人列表' })
-  async getSignersByContract(@Param('contractId') contractId: string) {
-    return this.signingService.getSignersByContract(contractId);
+  async getSignersByContract(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('contractId') contractId: string,
+  ) {
+    return this.signingService.getSignersByContract(contractId, user.tenantId);
   }
 
   @Post('signer/:id/remind')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: '发送签署提醒' })
-  async sendReminder(@Param('id') signerId: string) {
-    return this.signingService.sendReminder(signerId);
+  async sendReminder(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') signerId: string,
+  ) {
+    return this.signingService.sendReminder(signerId, user.tenantId);
   }
 
   @Get('public/verify/:token')

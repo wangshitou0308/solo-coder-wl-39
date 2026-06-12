@@ -194,7 +194,7 @@ export class BatchService {
         await this.signerRepository.save(signer);
 
         const contract = await this.contractRepository.findOne({
-          where: { id: signer.contractId },
+          where: { id: signer.contractId, tenantId: user.tenantId },
         });
         if (contract) {
           this.notificationService.sendSignReminder(signer, contract);
@@ -448,7 +448,8 @@ export class BatchService {
     }
 
     const timestamp = Date.now();
-    const zipFilename = `contracts_batch_${timestamp}.zip`;
+    const tenantShort = user.tenantId.substring(0, 8);
+    const zipFilename = `${tenantShort}_contracts_batch_${timestamp}.zip`;
     const zipFilePath = path.join(this.downloadDir, zipFilename);
 
     const manifestLines: string[] = [];
@@ -530,8 +531,14 @@ export class BatchService {
     };
   }
 
-  getDownloadFilePath(filename: string): string {
+  getDownloadFilePath(filename: string, tenantId: string): string {
     const safeFilename = path.basename(filename);
+    const tenantShort = tenantId.substring(0, 8);
+
+    if (!safeFilename.startsWith(`${tenantShort}_`)) {
+      throw new ForbiddenException('无权限下载该文件');
+    }
+
     const filePath = path.join(this.downloadDir, safeFilename);
     if (!fs.existsSync(filePath)) {
       throw new BadRequestException('文件不存在或已过期');

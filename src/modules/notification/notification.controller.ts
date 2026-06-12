@@ -31,8 +31,9 @@ export class NotificationController {
   @ApiOperation({ summary: '获取指定合同的通知历史' })
   @ApiParam({ name: 'contractId', description: '合同ID' })
   async getNotificationsByContract(
+    @CurrentUser() user: CurrentUserPayload,
     @Param('contractId') contractId: string,
   ) {
-    return this.notificationService.findByContractId(contractId);
+    return this.notificationService.findByContractId(contractId, user.tenantId);
   }
 }

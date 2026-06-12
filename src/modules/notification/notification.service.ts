@@ -294,9 +294,9 @@ export class NotificationService {
     );
   }
 
-  async findByContractId(contractId: string): Promise<Notification[]> {
+  async findByContractId(contractId: string, tenantId: string): Promise<Notification[]> {
     return this.notificationRepository.find({
-      where: { contractId },
+      where: { contractId, tenantId },
       order: { createdAt: 'DESC' },
     });
   }

@@ -3,6 +3,7 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -36,22 +37,18 @@ export class SigningService {
     private readonly pdfService: PdfService,
   ) {}
 
-  async getSignersByContract(contractId: string): Promise<Signer[]> {
-    const signers = await this.signerRepository.find({
+  async getSignersByContract(contractId: string, tenantId: string): Promise<Signer[]> {
+    const contract = await this.contractRepository.findOne({
+      where: { id: contractId, tenantId },
+    });
+    if (!contract) {
+      throw new NotFoundException('合同不存在');
+    }
+
+    return this.signerRepository.find({
       where: { contractId },
       order: { signOrder: 'ASC', createdAt: 'ASC' },
     });
-
-    if (!signers || signers.length === 0) {
-      const contractExists = await this.contractRepository.findOne({
-        where: { id: contractId },
-      });
-      if (!contractExists) {
-        throw new NotFoundException('合同不存在');
-      }
-    }
-
-    return signers;
   }
 
   async verifySignToken(
@@ -360,7 +357,7 @@ export class SigningService {
     return { signer, contract };
   }
 
-  async sendReminder(signerId: string): Promise<Signer> {
+  async sendReminder(signerId: string, tenantId: string): Promise<Signer> {
     const signer = await this.signerRepository.findOne({
       where: { id: signerId },
     });
@@ -374,11 +371,11 @@ export class SigningService {
     }
 
     const contract = await this.contractRepository.findOne({
-      where: { id: signer.contractId },
+      where: { id: signer.contractId, tenantId },
     });
 
     if (!contract) {
-      throw new NotFoundException('合同不存在');
+      throw new ForbiddenException('无权限操作该签署人');
     }
 
     signer.reminderCount = signer.reminderCount + 1;

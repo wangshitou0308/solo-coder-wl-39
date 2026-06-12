@@ -61,10 +61,11 @@ export class BatchController {
   @Get('download/:filename')
   @Roles(UserRole.ADMIN, UserRole.INITIATOR)
   async downloadZipFile(
+    @CurrentUser() user: CurrentUserPayload,
     @Param('filename') filename: string,
     @Res() res: Response,
   ) {
-    const filePath = this.batchService.getDownloadFilePath(filename);
+    const filePath = this.batchService.getDownloadFilePath(filename, user.tenantId);
     res.download(filePath, filename);
   }
 }
